@@ -1,10 +1,16 @@
+import 'dart:convert';
+
+import 'package:dashboard/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'constant.dart';
-import 'dart:async';
-import 'dart:math' as math;
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
+import 'package:http/http.dart' as http;
+// import 'dart:async';
+// import 'dart:math' as math;
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -18,15 +24,37 @@ class _DashboardState extends State<Dashboard> {
   late List<LiveData> chartData;
   late ChartSeriesController _chartSeriesController;
 
+  Future<void> fetchLatestRecord() async {
+   final response = await http
+      .get(
+        Uri.http("192.168.1.9:8080","latestrecords")
+      );
+
+  if(response.statusCode == 200)
+  {
+    var jsonData = jsonDecode(response.body);
+    //print(jsonData);
+    setState(() {
+      temp = double.parse(jsonData["Temp"]);
+      humdity = double.parse(jsonData["humidity"]);
+      pressure = double.parse(jsonData["Pressure"]);
+    });
+  }
+  else{
+    throw Exception('Failed to load data');
+  }
+}
+
   @override
   void initState() {
     chartData = getChartData();
     //Timer.periodic(const Duration(seconds: 1),updateDataSource);
+    fetchLatestRecord();
     super.initState();
   }
 //linechartend
 
-  Material MyItems(String heading, int color, String type) {
+  Material MyItems(String heading, int color, String type, double val) {
     return Material(
       color: Colors.white,
       elevation: 14.0,
@@ -72,7 +100,7 @@ class _DashboardState extends State<Dashboard> {
                                   //pointers:<GaugePointer>[MarkerPointer(value: 90,enableAnimation: true,)],
                                   pointers: <GaugePointer>[
                                     NeedlePointer(
-                                      value: 90,
+                                      value: val,
                                       enableAnimation: true,
                                     )
                                   ],
@@ -93,7 +121,7 @@ class _DashboardState extends State<Dashboard> {
                                   annotations: <GaugeAnnotation>[
                                     GaugeAnnotation(
                                       widget: Text(
-                                        '90.0MPH',
+                                        val.toString() +' MPH',
                                         style: TextStyle(
                                             fontSize: 20.0,
                                             fontWeight: FontWeight.bold),
@@ -168,22 +196,22 @@ class _DashboardState extends State<Dashboard> {
         mainAxisSpacing: 12.0,
         padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         children: <Widget>[
-          MyItems("Temperature", 0xffed622b, gaugeGraph),
-          MyItems("Humidity", 0xff26cb3c, "linechart"),
-          MyItems("Pressure", 0xffff3266, gaugeGraph),
-          MyItems("Graph", 0xff3399fe, linechart),
-          MyItems("Graph", 0xfff4c83f, linechart),
-          MyItems("Graph", 0xfff4c83f, linechart),
-          MyItems("Table", 0xfff4c83f, "Yas"),
+          MyItems("Temperature", 0xffed622b, gaugeGraph, temp),
+          MyItems("Humidity", 0xff26cb3c, gaugeGraph , humdity),
+          MyItems("Pressure", 0xffff3266, gaugeGraph, pressure),
+          // MyItems("Graph", 0xff3399fe, linechart , 0),
+          // MyItems("Graph", 0xfff4c83f, linechart , 0),
+          // MyItems("Graph", 0xfff4c83f, linechart, 0),
+          // MyItems("Table", 0xfff4c83f, "Yas", 0),
         ],
         staggeredTiles: [
           StaggeredTile.extent(1, 450.0),
           StaggeredTile.extent(1, 450.0),
           StaggeredTile.extent(1, 450.0),
-          StaggeredTile.extent(1, 450.0),
-          StaggeredTile.extent(1, 450.0),
-          StaggeredTile.extent(1, 450.0),
-          StaggeredTile.extent(3, 650.0),
+          // StaggeredTile.extent(1, 450.0),
+          // StaggeredTile.extent(1, 450.0),
+          // StaggeredTile.extent(1, 450.0),
+          // StaggeredTile.extent(3, 650.0),
         ],
       ),
     );
